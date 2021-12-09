@@ -31,13 +31,13 @@ The book I chose is written by Charlse Dickens, and the book name is "Hard Times
 # search the books from one author
 # gutenberg_works(str_detect(author, "Dickens"))
 
-# get the book from   the website
+# get the book from the website
 Christmas_df = gutenberg_download(gutenberg_id = 46)
 
 #my_books=hard_times_df
 
 # save it into txt  
-write.table(Christmas_df,'A_Christmas_Carol.txt',row.names = F)
+# write.table(Christmas_df,'A_Christmas_Carol.txt',row.names = F)
 
 ```
 
@@ -55,38 +55,62 @@ source("Book2TN-v6A-1.R")
 ```{r}
 # get the table from txt
 Christmas_table <-read.table('A_Christmas_Carol.txt',header = T)
-#tnBooksFromLines(mybook$text, "Zweig/test2")
+
 ```
 
 ## TASK 2: Bag of Word Analysis
 
+In this part, I will show the sentiment analysis by using AFINN, Bing and NRC respectively. I am going to plot several barplots to compare these 3 methods And show the differences of them.
 
-First, I use three types of sentiment analysis methods AFINN, Bing and NRC to plot barplot to compare these methods. From the graph below, the AFINN and Bing method fits better. Most of the polt in `The Burning Secret` is in negative. In this book, While being treated for asthma at a country spa, an American diplomat's lonely 12-year-old son is befriended and infatuated by a suave, mysterious baron. But soon his adored friend heartlessly brushes him aside and turns his seductive attentions to his mother. The boy's jealousy and feelings of betrayal become uncontrollable. The story is set in Austria in the 1920s. That is to say, at the beginning of the book, the sentiment of the book is positive, but soon it converts into negative sentiment. However, it is difficult to identify which of the two methods is better. In the following task, I use Bing method to conduct further analysis.
+The book, A Christmas Carol, is in general a book with more negative sentiments than positive sentiments. 
+
+To briefly summarize the book, at the very beginning, the book describes the background of Ireland in the 1840s, where people were suffering from hungers and coldness. The leading character of the novel is Scrooge, who is a scrooge literally. He loves money and does not spare his mercy to others. On Christmas eve, so many ghosts visited Scrooge's house and made him see his death. After the night, Scrooge realized that money would be gone one day and changed himself and 
+
+In conclusion, according to the plotline, the sentiment of the book should be negetive at first and positive at the very last, which I find Bing lexicon and Afinn lexicon both work well. It's hard to tell which one works the better. The only difference bewteen these 2 I find is that the sentiment by Bing lexicon is more negetive, which I think may fit the book better.
+
+Consequently, in the following part, I will mainly do the sentiment analysis by using Bing lexicon.
+
 
 ```{r}
-#my_book=mybook
-tidy_Christmas <- Christmas_df %>%
+# generally display the book saved in dataframe
+Christmas_table
+```
+
+
+```{r}
+# Find the chapter for the book;
+# Add one column to record the chapter number for each token
+
+tidy_Christmas <- Christmas_table %>%
   mutate(
     linenumber = row_number(),
     chapter = cumsum(str_detect(text, 
-                                regex("^chapter [\\divxlc]", 
-                                      ignore_case = TRUE)))) %>%
+                                regex("<")
+                                      ))) %>%
   unnest_tokens(word, text)
+
+#tidy_Christmas$chapter%>%unique()
+#tidy_Christmas%>%view()
 ```
 
 
 ```{r}
-afinn_Christmas <- tidy_Christmas %>% 
-  inner_join(get_sentiments("afinn")) %>% 
-  group_by(index = linenumber %/% 80) %>% 
-  summarise(sentiment = sum(value)) %>% 
-  mutate(method = "AFINN")
+afinn_Christmas_list <- tidy_Christmas %>% 
+  inner_join(get_sentiments("afinn"))
 
+bing_Chritmas_list <- tidy_Christmas %>% 
+    inner_join(get_sentiments("bing")) %>%
+    mutate(method = "Bing et al.")
+
+nrc_Chritmas_list <- tidy_Christmas %>% 
+    inner_join(get_sentiments("nrc") %>% 
+                 filter(sentiment %in% c("positive", 
+                                         "negative")))%>%
+    mutate(method = "NRC")
 ```
 
-
-
 ```{r}
+# 
 afinn_Christmas <- tidy_Christmas %>% 
   inner_join(get_sentiments("afinn")) %>% 
   group_by(index = linenumber %/% 80) %>% 
@@ -108,10 +132,26 @@ bing_and_nrc <- bind_rows(
               values_from = n,
               values_fill = 0) %>% 
   mutate(sentiment = positive - negative)
+
+
+afinn_Christmas_list
+
+
+
+afinn_Christmas
+df1 <- bing_and_nrc
+df2 <- bind_rows(bing_Chritmas_list,nrc_Chritmas_list)%>%
+  count(method, index = linenumber %/% 80, sentiment) %>%
+  pivot_wider(names_from = sentiment,
+              values_from = n,
+              values_fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+  
 ```
 
-```{r fig.cap="sentiment plot"}
+```{r fig.cap="sentiment plot for A Christmas Carol"}
 #
+
 bind_rows(afinn_Christmas, 
           bing_and_nrc) %>%
   ggplot(aes(index, sentiment, fill = method)) +
@@ -119,6 +159,7 @@ bind_rows(afinn_Christmas,
   facet_wrap(~method, ncol = 1, scales = "free_y")+
   theme_bw()
 ```
+
 
 ```{r}
 bing_word_counts <- tidy_Christmas %>%
@@ -142,7 +183,7 @@ bing_word_counts %>%
   theme_bw()
 ```
 
-Figure 2 shows negative and positive word count of each word. For the negative chart, dark is the most common words throughout the whole book. Hate and darkness rank the second and third place respectively. For the positive chart, like is the most common words throughout the whole book. Great and good rank the second and third place respectively.
+Figure 2 presents the top 10 negative and positive word count. In the negative barplot chart, the word  "poor" is the most common word followed by word "cold" and "dark". In the positive part, The most frequent word is "good" with "like" and "great" following after.
 
 
 ```{r fig.width=6, fig.height=4,fig.cap='word cloud'}
@@ -151,7 +192,7 @@ library(wordcloud)
 tidy_Christmas %>%
   anti_join(stop_words) %>%
   count(word) %>%
-  with(wordcloud(word, n, max.words = 100))
+  with(wordcloud(word, n, max.words = 100, colors = "brown2"))
 ```
 
 Figure 3 displays word cloud which shows the frequency. As we can see, baron, mother, edgar are the most frequency words among all the words. It is reasonable because they are the main characters in that fiction book. In task 3, I will use two of three characters to conduct further analysis.
@@ -165,8 +206,8 @@ tidy_Christmas %>%
   inner_join(get_sentiments("bing")) %>%
   count(word, sentiment, sort = TRUE) %>%
   acast(word ~ sentiment, value.var = "n", fill = 0) %>%
-  comparison.cloud(colors = c("gray20", "gray80"),
-                   max.words = 100)
+  comparison.cloud(colors = c("brown2", "darkolivegreen3"),
+                   max.words = 100, scale = c(4.6,0.2))
 ```
 
 Figure 4 generally converts Figure 2's information into word cloud  
@@ -177,47 +218,49 @@ Figure 4 generally converts Figure 2's information into word cloud
 
 First, I put the book into tnum, the following table shows evidence of my tnum database.
 
-```{r echo=T}
-q24<- tnum.query('zweig/test2/heading# has text',max=90)
-df24 <- tnum.objectsToDf(q24)
-knitr::kable(df24 %>% select(subject:numeric.value)%>% head())
-```
-
-
-```{r echo=T}
-q26<- tnum.query('zweig/test2# has text',max=60)
-df26 <- tnum.objectsToDf(q26)
-df26 %>% select(subject:string.value)%>% head()
-
-```
-
-```{r}
-tnBooksFromLines(Christmas_df$text, "Charlse_Dickens/A_Christmas_Carol")
-q20<-tnum.query(query="Charlse_Dickens/A_Christmas_Carol# has *",max=100000)
+```{r, message=FALSE, warning=FALSE}
+# tnBooksFromLines(Christmas_table$text, "Charlse_Dickens/A_Christmas_Carol_4")
+# q20<-tnum.query(query="Charlse_Dickens/A_Christmas_Carol# has *",max=100000) %>% tnum.objectsToDf()
 # df20 <- tnum.objectsToDf(q20)
 # df20 %>% view()
 ```
 
+```{r echo=TRUE, message=FALSE}
+df_heading<- tnum.query('Charlse_Dickens/A_Christmas_Carol_4/heading# has text',max=90) %>% tnum.objectsToDf()
+kable(df_heading %>% select(subject:numeric.value))
+```
+
+
+```{r echo=TRUE}
+# q26<- tnum.query('*# has text',max=300000) %>% tnum.objectsToDf()
+df_text <- tnum.query('Charlse_Dickens/A_Christmas_Carol_4# has text',max=60) %>% tnum.objectsToDf()
+df_text %>% select(subject:string.value)%>% head()
+
+```
+
+
+
 
 
 
 
 
 ```{r}
-df27<- tnum.query('zweig/test2/section# has text',max=7000) %>% tnum.objectsToDf()
+
+df_section<- tnum.query('Charlse_Dickens/A_Christmas_Carol_4/section# has text',max=9000) %>% tnum.objectsToDf()
 #df27 %>% view()
-book_sentence<-df27 %>% separate(col=subject,
+Christmas_by_sentence<-df_section %>% separate(col=subject,
                   into = c("path1", "path2","section","paragraph","sentence"), 
                   sep = "/", 
                   fill = "right") %>% 
   select(section:string.value)
 
 #book_sentence$section<-str_extract_all(book_sentence$section,"\\d+") %>% unlist() %>% as.numeric()
-book_sentence<-book_sentence %>% mutate_at(c('section','paragraph','sentence'),~str_extract_all(.,"\\d+") %>% unlist() %>% as.numeric())
+Christmas_by_sentence<-Christmas_by_sentence %>% mutate_at(c('section','paragraph','sentence'),~str_extract_all(.,"\\d+") %>% unlist() %>% as.numeric())
 
 
-
-sentence_out<-book_sentence %>% dplyr::mutate(sentence_split = get_sentences(string.value))%$%
+### change the name of sentence_out
+sentence_out<-Christmas_by_sentence %>% mutate(sentence_split = get_sentences(string.value))%$%
     sentiment_by(sentence_split, list(section))
 
 plot(sentence_out)
@@ -227,9 +270,20 @@ plot(sentence_out)
 ### Compare this analysis with the analysis you did in Task TWO
 
 It is difficult to directly compare Sentimentr and Bing's score. Therefore, I apply `scale` function to keep two variable into the same criteria. Then I use ggplot to plot bar plot. From the Figure below, we can see that the trends, say positive and negetive direction, are mainly similar. But the exact number differs from two methods. Generally, sentimentr package is more optimictic than Bing method. 
+```{r}
+normalize<-function(x){
+  re<-(x-min(x)) /(max(x)-min(x))
+  return(re)
+}
+
+normalize_log<-function(x){
+  re<-(log(x) /log(max(x)))
+  return(re)
+}
+```
 
 ```{r fig.cap="sentiment comparison"}
-new_bing<-tidy_books %>% 
+bing_new<-tidy_Christmas %>% 
     inner_join(get_sentiments("bing")) %>%
     mutate(method = "Bing et al.") %>% 
     count(method, index = chapter, sentiment) %>%
@@ -240,13 +294,13 @@ new_bing<-tidy_books %>%
 
 
 
-new_bing2<-new_bing %>% mutate(bing_scale=scale(sentiment)) %>% select(method,index,bing_scale)
-colnames(new_bing2)[2]='section'
+bing_new_Chritmas<-bing_new %>% mutate(bing_scale=rank(sentiment)) %>% select(method,index,bing_scale)
+colnames(bing_new_Chritmas)[2]='section'
 
-sentence_out<-sentence_out %>% mutate(sentimentr_scale=scale(ave_sentiment))
+sentence_out<-sentence_out %>% mutate(sentimentr_scale=rank(ave_sentiment))
 
 
-sentence_out_2method<-left_join(sentence_out,new_bing2,by='section')%>% select(section,bing_scale,sentimentr_scale)
+sentence_out_2method<-left_join(sentence_out,bing_new_Chritmas,by='section')%>% select(section,bing_scale,sentimentr_scale)
 sentence_out_2method_plot<-sentence_out_2method %>% pivot_longer(cols=c('sentimentr_scale','bing_scale'),names_to = 'sentiment')
 
 sentence_out_2method_plot %>%ggplot(aes(y=value,x=factor(section))) +
@@ -257,7 +311,7 @@ sentence_out_2method_plot %>%ggplot(aes(y=value,x=factor(section))) +
 \newpage
 
 
-### EXTRA CREDIT: character analysis
+### EXTRA CREDIT: Character Analysis
 
 Baron and Edger are two main character among the fiction book. I Pick these two characters from my book.     
 The following table in the count number of times each character appears in each chapter:
