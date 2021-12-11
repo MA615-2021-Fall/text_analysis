@@ -73,7 +73,7 @@ Consequently, in the following part, I will mainly do the sentiment analysis by 
 
 ```{r}
 # generally display the book saved in dataframe
-Christmas_table
+# head(Christmas_table)
 ```
 
 
@@ -93,34 +93,67 @@ tidy_Christmas <- Christmas_table %>%
 #tidy_Christmas%>%view()
 ```
 
+I now use 3 lexicons to get the sentiment analysis for every word in the book, and try to tell the difference among the 3 methods
 
-```{r}
+The first one is Afinn lexicon(outcome is 1945rows X 5columns):
+```{r }
+# do the inner join to get the sentiment analysis by afinn lexicon for each word in the book
 afinn_Christmas_list <- tidy_Christmas %>% 
   inner_join(get_sentiments("afinn"))
 
-bing_Chritmas_list <- tidy_Christmas %>% 
+kable(head(afinn_Christmas_list), caption = "Word-level analysis -- Afinn lexicon")
+kable(unique(afinn_Christmas_list$value), col.names = "sentiment", caption = "Value column -- Afinn lexicon")
+structure(afinn_Christmas_list)
+```
+
+The second one is Bing lexicon(outcome is 1926rows X 6columns):
+```{r}
+# do the inner join to get the sentiment analysis by bing lexicon for each word in the book
+bing_Christmas_list <- tidy_Christmas %>% 
     inner_join(get_sentiments("bing")) %>%
     mutate(method = "Bing et al.")
 
-nrc_Chritmas_list <- tidy_Christmas %>% 
-    inner_join(get_sentiments("nrc") %>% 
-                 filter(sentiment %in% c("positive", 
-                                         "negative")))%>%
-    mutate(method = "NRC")
+kable(head(bing_Christmas_list),caption = "Word-level analysis -- Bing lexicon")
+kable(unique(bing_Christmas_list$sentiment), col.names = "sentiment", caption = "Sentiment column -- Bing lexicon")
+structure(bing_Christmas_list)
 ```
+
+The third one is nrc lexicon(outcome is 2188rows X 6columns):
+```{r}
+# do the inner join to get the sentiment analysis by nrc lexicon for each word in the book
+nrc_Christmas_list <- tidy_Christmas %>% 
+    inner_join(get_sentiments("nrc")) %>% 
+                 # filter(sentiment %in% c("positive", 
+                 #                         "negative")))%>%
+    mutate(method = "NRC")
+
+kable(head(nrc_Christmas_list), caption = "Word-level analysis -- NRC lexicon")
+kable(unique(nrc_Christmas_list$sentiment), col.names = "sentiment", caption = "Sentiment column -- NRC lexicon")
+structure(nrc_Christmas_list)
+```
+According to the tables from 1 to 6, we can tell that:
+
+In afinn lexicon, the value column represents the sentiment of each word ranged from -5 to 5, where negative values refer to the negative sentiment and positive values represent the positive sentiment. 
+
+In the Bing lexicon, the sentiment column represents the sentiment of each word with 2 kinds of outputs- "negative" and "positive", which is easy to tell what they represent respectively. 
+
+In the NRC lexicon, the sentiment column also represents the sentiment of each word with not only "negative" and "positive", but also other outputs like "fear", "sadness", "anger","anticipation", "disgust", "joy", "trust", and "surprise", so the sentiment description in NRC lexicon is much more detailed.
+
+And because of the different numbers of words in lexicons, the outcomes of inner join different. The results inner joined by nrc lexicon is larger because there are more words in the nrc lexicon.
+
+In my opinion, the values in afinn lexicon and the sentiment in Bing lexicon(which can be transformed into dummy variables) are machine-readable and easy to process. But for the nrc lexicon, for now I can only take the "positive" and "negative" into account to make it machine-readable and easy to process because of the lack of assessments of other sentiments.
+
+
 
 ```{r}
 # 
-afinn_Christmas <- tidy_Christmas %>% 
-  inner_join(get_sentiments("afinn")) %>% 
+afinn_Christmas <- afinn_Christmas_list %>% 
   group_by(index = linenumber %/% 80) %>% 
   summarise(sentiment = sum(value)) %>% 
   mutate(method = "AFINN")
 
 bing_and_nrc <- bind_rows(
-  tidy_Christmas %>% 
-    inner_join(get_sentiments("bing")) %>%
-    mutate(method = "Bing et al."),
+  bing_Christmas_list,
   tidy_Christmas %>% 
     inner_join(get_sentiments("nrc") %>% 
                  filter(sentiment %in% c("positive", 
@@ -134,18 +167,18 @@ bing_and_nrc <- bind_rows(
   mutate(sentiment = positive - negative)
 
 
-afinn_Christmas_list
 
 
 
-afinn_Christmas
-df1 <- bing_and_nrc
-df2 <- bind_rows(bing_Chritmas_list,nrc_Chritmas_list)%>%
-  count(method, index = linenumber %/% 80, sentiment) %>%
-  pivot_wider(names_from = sentiment,
-              values_from = n,
-              values_fill = 0) %>% 
-  mutate(sentiment = positive - negative)
+
+# afinn_Christmas
+# df1 <- bing_and_nrc
+# df2 <- bind_rows(bing_Chritmas_list,nrc_Chritmas_list)%>%
+#   count(method, index = linenumber %/% 80, sentiment) %>%
+#   pivot_wider(names_from = sentiment,
+#               values_from = n,
+#               values_fill = 0) %>% 
+#   mutate(sentiment = positive - negative)
   
 ```
 
@@ -159,7 +192,7 @@ bind_rows(afinn_Christmas,
   facet_wrap(~method, ncol = 1, scales = "free_y")+
   theme_bw()
 ```
-
+Figure 1 is the sentiment progress for every 80 lines in this book with different books.
 
 ```{r}
 bing_word_counts <- tidy_Christmas %>%
@@ -189,13 +222,15 @@ Figure 2 presents the top 10 negative and positive word count. In the negative b
 ```{r fig.width=6, fig.height=4,fig.cap='word cloud'}
 library(wordcloud)
 
+# set seed to make the word cloud fixed
+set.seed("3")
 tidy_Christmas %>%
   anti_join(stop_words) %>%
   count(word) %>%
   with(wordcloud(word, n, max.words = 100, colors = "brown2"))
 ```
 
-Figure 3 displays word cloud which shows the frequency. As we can see, baron, mother, edgar are the most frequency words among all the words. It is reasonable because they are the main characters in that fiction book. In task 3, I will use two of three characters to conduct further analysis.
+Figure 3 displays word cloud where we can get the frequency for top 100 words with the size representing the word count. As is shown in the figure, "Scrooge", the leading character in this book, is the most common word by bing lexicon, which makes sense in this case. And the "Christmas", "ghost" and "spirit" follow after, which represent the period of time, objects talking about in the main plotline. the It is reasonable because they are the main characters in that fiction book. And we can also find "Bob", another main character in this fiction, which I will do the character analysis along with Scrooge.
 
 
 ```{r fig.width=6, fig.height=4,fig.cap="sentiment word cloud"}
@@ -210,7 +245,32 @@ tidy_Christmas %>%
                    max.words = 100, scale = c(4.6,0.2))
 ```
 
-Figure 4 generally converts Figure 2's information into word cloud  
+Figure 4 shows the word frequency of "positive" and "negative" words, where the size represents the word count. This part is also shown in Figure 2, but now we show them in a different way.
+
+### Extra Credit
+In `textdata` package, there are one extra lexicons available to use. This lexicons is called `Loughran-McDonald`. Here I use this new method and plot the similar graph to show the progression from start to finish of the book.
+
+```{r}
+# this is similar to previous code
+# use 
+LM<-tidy_Christmas %>% 
+    inner_join(get_sentiments("loughran")) %>%
+    mutate(method = "Loughran-McDonald")  %>% 
+  count(method, index = linenumber %/% 80, sentiment) %>% 
+  pivot_wider(names_from = sentiment,
+              values_from = n,
+              values_fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+# use ggplot to plot the barplot
+LM%>%ggplot(aes(index, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +labs(title='Loughran-McDonald')+
+  theme_bw()+theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+Then I provide some description. According to the introduction of [https://emilhvitfeldt.github.io/textdata/reference/lexicon_loughran.html](https://emilhvitfeldt.github.io/textdata/reference/lexicon_loughran.html), this lexicon is created for use with financial documents. Therefore, the graph is complete different from previous lexicon graphs. Therefore, this lexicon cannot correctly reflect the exact sentiment of the book. After all, financial sentiment lexicon isn't necessarily suitable for fiction book.
+
+
 
 ## task 3 sentence-level analysis
 
@@ -223,7 +283,7 @@ First, I put the book into tnum, the following table shows evidence of my tnum d
 # q20<-tnum.query(query="Charlse_Dickens/A_Christmas_Carol# has *",max=100000) %>% tnum.objectsToDf()
 # df20 <- tnum.objectsToDf(q20)
 # df20 %>% view()
-```
+
 
 ```{r echo=TRUE, message=FALSE}
 df_heading<- tnum.query('Charlse_Dickens/A_Christmas_Carol_4/heading# has text',max=90) %>% tnum.objectsToDf()
@@ -316,7 +376,7 @@ sentence_out_2method_plot %>%ggplot(aes(y=value,x=factor(section))) +
 Baron and Edger are two main character among the fiction book. I Pick these two characters from my book.     
 The following table in the count number of times each character appears in each chapter:
 
-```{r}
+```{r eval=FALSE}
 #theme(legend.key.size = unit(2, 'cm'),legend.title = element_text(size=30),legend.text = element_text(size=30))
 book_sentence_indi<-book_sentence %>% mutate(baron=str_match(book_sentence$string.value,regex('([Bb]aron)'))[,1],
                          edgar=str_match(book_sentence$string.value,regex('(Edgar)'))[,1])
