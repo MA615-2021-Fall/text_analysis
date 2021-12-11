@@ -2,7 +2,13 @@
 title: "Text Analysis"
 author: "Jinyu Li"
 date: "2021/12/06"
-output: pdf_document
+output: 
+  pdf_document
+
+
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup, include=FALSE}
@@ -25,7 +31,9 @@ textdata
 
 ## Task 1: Pick a Book
 
-The book I chose is written by Charlse Dickens, and the book name is "Hard Times" and shortened as "A Christmas Carol" because we are gonna spend our final time of the year at Christmas.
+The book I chose is written by Charlse Dickens, and the book name is
+"Hard Times" and shortened as "A Christmas Carol" because we are gonna
+spend our final time of the year at Christmas.
 
 ```{r}
 # search the books from one author
@@ -49,9 +57,6 @@ source("Book2TN-v6A-1.R")
 
 ```
 
-
-
-
 ```{r}
 # get the table from txt
 Christmas_table <-read.table('A_Christmas_Carol.txt',header = T)
@@ -60,22 +65,35 @@ Christmas_table <-read.table('A_Christmas_Carol.txt',header = T)
 
 ## TASK 2: Bag of Word Analysis
 
-In this part, I will show the sentiment analysis by using AFINN, Bing and NRC respectively. I am going to plot several barplots to compare these 3 methods And show the differences of them.
+In this part, I will show the sentiment analysis by using AFINN, Bing
+and NRC respectively. I am going to plot several barplots to compare
+these 3 methods And show the differences of them.
 
-The book, A Christmas Carol, is in general a book with more negative sentiments than positive sentiments. 
+The book, A Christmas Carol, is in general a book with more negative
+sentiments than positive sentiments.
 
-To briefly summarize the book, at the very beginning, the book describes the background of Ireland in the 1840s, where people were suffering from hungers and coldness. The leading character of the novel is Scrooge, who is a scrooge literally. He loves money and does not spare his mercy to others. On Christmas eve, so many ghosts visited Scrooge's house and made him see his death. After the night, Scrooge realized that money would be gone one day and changed himself and 
+To briefly summarize the book, at the very beginning, the book describes
+the background of Ireland in the 1840s, where people were suffering from
+hungers and coldness. The leading character of the novel is Scrooge, who
+is a scrooge literally. He loves money and does not spare his mercy to
+others. On Christmas eve, so many ghosts visited Scrooge's house and
+made him see his death. After the night, Scrooge realized that money
+would be gone one day and changed himself and
 
-In conclusion, according to the plotline, the sentiment of the book should be negetive at first and positive at the very last, which I find Bing lexicon and Afinn lexicon both work well. It's hard to tell which one works the better. The only difference bewteen these 2 I find is that the sentiment by Bing lexicon is more negetive, which I think may fit the book better.
+In conclusion, according to the plotline, the sentiment of the book
+should be negetive at first and positive at the very last, which I find
+Bing lexicon and Afinn lexicon both work well. It's hard to tell which
+one works the better. The only difference bewteen these 2 I find is that
+the sentiment by Bing lexicon is more negetive, which I think may fit
+the book better.
 
-Consequently, in the following part, I will mainly do the sentiment analysis by using Bing lexicon.
-
+Consequently, in the following part, I will mainly do the sentiment
+analysis by using Bing lexicon.
 
 ```{r}
 # generally display the book saved in dataframe
 # head(Christmas_table)
 ```
-
 
 ```{r}
 # Find the chapter for the book;
@@ -93,9 +111,11 @@ tidy_Christmas <- Christmas_table %>%
 #tidy_Christmas%>%view()
 ```
 
-I now use 3 lexicons to get the sentiment analysis for every word in the book, and try to tell the difference among the 3 methods
+I now use 3 lexicons to get the sentiment analysis for every word in the
+book, and try to tell the difference among the 3 methods
 
 The first one is Afinn lexicon(outcome is 1945rows X 5columns):
+
 ```{r }
 # do the inner join to get the sentiment analysis by afinn lexicon for each word in the book
 afinn_Christmas_list <- tidy_Christmas %>% 
@@ -107,6 +127,7 @@ structure(afinn_Christmas_list)
 ```
 
 The second one is Bing lexicon(outcome is 1926rows X 6columns):
+
 ```{r}
 # do the inner join to get the sentiment analysis by bing lexicon for each word in the book
 bing_Christmas_list <- tidy_Christmas %>% 
@@ -119,6 +140,7 @@ structure(bing_Christmas_list)
 ```
 
 The third one is nrc lexicon(outcome is 2188rows X 6columns):
+
 ```{r}
 # do the inner join to get the sentiment analysis by nrc lexicon for each word in the book
 nrc_Christmas_list <- tidy_Christmas %>% 
@@ -131,19 +153,33 @@ kable(head(nrc_Christmas_list), caption = "Word-level analysis -- NRC lexicon")
 kable(unique(nrc_Christmas_list$sentiment), col.names = "sentiment", caption = "Sentiment column -- NRC lexicon")
 structure(nrc_Christmas_list)
 ```
+
 According to the tables from 1 to 6, we can tell that:
 
-In afinn lexicon, the value column represents the sentiment of each word ranged from -5 to 5, where negative values refer to the negative sentiment and positive values represent the positive sentiment. 
+In afinn lexicon, the value column represents the sentiment of each word
+ranged from -5 to 5, where negative values refer to the negative
+sentiment and positive values represent the positive sentiment.
 
-In the Bing lexicon, the sentiment column represents the sentiment of each word with 2 kinds of outputs- "negative" and "positive", which is easy to tell what they represent respectively. 
+In the Bing lexicon, the sentiment column represents the sentiment of
+each word with 2 kinds of outputs- "negative" and "positive", which is
+easy to tell what they represent respectively.
 
-In the NRC lexicon, the sentiment column also represents the sentiment of each word with not only "negative" and "positive", but also other outputs like "fear", "sadness", "anger","anticipation", "disgust", "joy", "trust", and "surprise", so the sentiment description in NRC lexicon is much more detailed.
+In the NRC lexicon, the sentiment column also represents the sentiment
+of each word with not only "negative" and "positive", but also other
+outputs like "fear", "sadness", "anger","anticipation", "disgust",
+"joy", "trust", and "surprise", so the sentiment description in NRC
+lexicon is much more detailed.
 
-And because of the different numbers of words in lexicons, the outcomes of inner join different. The results inner joined by nrc lexicon is larger because there are more words in the nrc lexicon.
+And because of the different numbers of words in lexicons, the outcomes
+of inner join different. The results inner joined by nrc lexicon is
+larger because there are more words in the nrc lexicon.
 
-In my opinion, the values in afinn lexicon and the sentiment in Bing lexicon(which can be transformed into dummy variables) are machine-readable and easy to process. But for the nrc lexicon, for now I can only take the "positive" and "negative" into account to make it machine-readable and easy to process because of the lack of assessments of other sentiments.
-
-
+In my opinion, the values in afinn lexicon and the sentiment in Bing
+lexicon(which can be transformed into dummy variables) are
+machine-readable and easy to process. But for the nrc lexicon, for now I
+can only take the "positive" and "negative" into account to make it
+machine-readable and easy to process because of the lack of assessments
+of other sentiments.
 
 ```{r}
 # 
@@ -183,7 +219,7 @@ bing_and_nrc <- bind_rows(
 ```
 
 ```{r fig.cap="sentiment plot for A Christmas Carol"}
-#
+#combine these 3 dataframe with different sentiment analysis methods and make the plot for sentiment analysis
 
 bind_rows(afinn_Christmas, 
           bing_and_nrc) %>%
@@ -192,7 +228,13 @@ bind_rows(afinn_Christmas,
   facet_wrap(~method, ncol = 1, scales = "free_y")+
   theme_bw()
 ```
-Figure 1 is the sentiment progress for every 80 lines in this book with different books.
+
+Figure 1 is the sentiment progress for every 80 lines in this book with different books. We can tell the sentiment changes through the progression of plotline. And different lexicons show a little
+different result. 
+
+From my perspective, the sentiment analysis by Bing lexicon better explains the sentiment of the book as the progression of the plots.
+
+Now I will pick up the Bing lexicon as the main lexicon to do the word count analysis and other analysis.
 
 ```{r}
 bing_word_counts <- tidy_Christmas %>%
@@ -216,8 +258,10 @@ bing_word_counts %>%
   theme_bw()
 ```
 
-Figure 2 presents the top 10 negative and positive word count. In the negative barplot chart, the word  "poor" is the most common word followed by word "cold" and "dark". In the positive part, The most frequent word is "good" with "like" and "great" following after.
-
+Figure 2 presents the top 10 negative and positive word count. In the
+negative barplot chart, the word "poor" is the most common word followed
+by word "cold" and "dark". In the positive part, The most frequent word
+is "good" with "like" and "great" following after.
 
 ```{r fig.width=6, fig.height=4,fig.cap='word cloud'}
 library(wordcloud)
@@ -230,10 +274,17 @@ tidy_Christmas %>%
   with(wordcloud(word, n, max.words = 100, colors = "brown2"))
 ```
 
-Figure 3 displays word cloud where we can get the frequency for top 100 words with the size representing the word count. As is shown in the figure, "Scrooge", the leading character in this book, is the most common word by bing lexicon, which makes sense in this case. And the "Christmas", "ghost" and "spirit" follow after, which represent the period of time, objects talking about in the main plotline. the It is reasonable because they are the main characters in that fiction book. And we can also find "Bob", another main character in this fiction, which I will do the character analysis along with Scrooge.
+Figure 3 displays word cloud where we can get the frequency for top 100
+words with the size representing the word count. As is shown in the
+figure, "Scrooge", the leading character in this book, is the most
+common word by bing lexicon, which makes sense in this case. And the
+"Christmas", "ghost" and "spirit" follow after, which represent the
+period of time, objects talking about in the main plotline. the It is
+reasonable because they are the main characters in that fiction book.
+And we can also find "Bob", another main character in this fiction,
+which I will do the character analysis along with Scrooge.
 
-
-```{r fig.width=6, fig.height=4,fig.cap="sentiment word cloud"}
+```{r fig.width=6, fig.height=4,fig.cap="Word Cloud with Sentiment Analysis"}
 #
 library(reshape2)
 
@@ -245,51 +296,84 @@ tidy_Christmas %>%
                    max.words = 100, scale = c(4.6,0.2))
 ```
 
-Figure 4 shows the word frequency of "positive" and "negative" words, where the size represents the word count. This part is also shown in Figure 2, but now we show them in a different way.
+Figure 4 shows the word frequency of "positive" and "negative" words,
+where the size represents the word count. This part is also shown in
+Figure 2, but now we show them in a different way.
+
+### Summarization
+
+To summarize, from Figure 1, we can tell the sentiment changes through
+the progression of plotline. And different lexicons show a little
+different result. But here, as I said at the beginning, I choose Bing
+lexicon as the best lexicon to explain.
+
+At the very beginning, the sentiment of the book is negative, which
+corresponding to the content of the book which tells the background of
+the story and it's a poor situation in Ireland. Later on, the book tells
+that Scrooge's living situation and he is rich, and in Figure 1 the
+sentiment is positive. And, the sentiment turns to negative for a while,
+goes back to positive and this process repeats twice. And that makes
+sense for the book because Scrooge experiences something bad at
+Christmas Eve and then changes himself into a good man at last.
+
+From Figure 2 and Figure 4, we can capture the top 100 most frequent
+sentimental words exist in this book. The most frequent negative one is
+"poor" and it can be translated into a poor situation in Ireland in
+1840s, which is the background of the story. The most frequent positive
+one is "good", which is general in many books and here it can also
+represent the personality of Scrooge at last.
+
+In Figure 3 part, I've already explained something below the figure, and
+the count of word in this book gives us the information about who is the
+leading character--Scrooge.
 
 ### Extra Credit
-In `textdata` package, there are one extra lexicons available to use. This lexicons is called `Loughran-McDonald`. Here I use this new method and plot the similar graph to show the progression from start to finish of the book.
 
-```{r}
+In addition to the 3 lexicons I used, I noticed that there is another
+lexicon called "Loughran-McDonald". Now, I am going to use this lexicon
+to make some similar plot and give an general idea of the plotline of
+the book from the start to the end.
+
+```{r fig.width=6, fig.height=4,fig.cap="Sentiment Analysis by LM lexicon"}
 # this is similar to previous code
-# use 
-LM<-tidy_Christmas %>% 
-    inner_join(get_sentiments("loughran")) %>%
-    mutate(method = "Loughran-McDonald")  %>% 
+# use inner join to match the word in the fiction and add the sentiment column
+LM_lexicon <-tidy_Christmas %>% 
+  inner_join(get_sentiments("loughran")) %>%
+  mutate(method = "Loughran-McDonald")  %>% 
   count(method, index = linenumber %/% 80, sentiment) %>% 
   pivot_wider(names_from = sentiment,
               values_from = n,
               values_fill = 0) %>% 
   mutate(sentiment = positive - negative)
-# use ggplot to plot the barplot
-LM%>%ggplot(aes(index, sentiment, fill = method)) +
+
+# use ggplot to make the barplot for sentiment analysis
+LM_lexicon %>%ggplot(aes(index, sentiment, fill = method)) +
   geom_col(show.legend = FALSE) +labs(title='Loughran-McDonald')+
   theme_bw()+theme(plot.title = element_text(hjust = 0.5))
 ```
 
+According to the plot we found that the sentiment in some part are zero, which doesn't happen in other lexicons. In the webpage [https://sraf.nd.edu/textual-analysis/contributed-materials/](https://sraf.nd.edu/textual-analysis/contributed-materials/), I notice that this lexicon is specially for accounting and financial documents. 
 
-Then I provide some description. According to the introduction of [https://emilhvitfeldt.github.io/textdata/reference/lexicon_loughran.html](https://emilhvitfeldt.github.io/textdata/reference/lexicon_loughran.html), this lexicon is created for use with financial documents. Therefore, the graph is complete different from previous lexicon graphs. Therefore, this lexicon cannot correctly reflect the exact sentiment of the book. After all, financial sentiment lexicon isn't necessarily suitable for fiction book.
-
-
+Consequently, the conclusion can be drawn that this lexicon is not very suitable for fiction sentiment analysis, which can also tell in Figure 5 because the sentiment does not properly match the plotline in the book.
 
 ## task 3 sentence-level analysis
 
 ### tnum
 
-First, I put the book into tnum, the following table shows evidence of my tnum database.
+Now, I input my book, A Christmas Carol, into tnum test2 space, the
+following table is part of the book.
 
 ```{r, message=FALSE, warning=FALSE}
+# input the book into tnum space
 # tnBooksFromLines(Christmas_table$text, "Charlse_Dickens/A_Christmas_Carol_4")
-# q20<-tnum.query(query="Charlse_Dickens/A_Christmas_Carol# has *",max=100000) %>% tnum.objectsToDf()
-# df20 <- tnum.objectsToDf(q20)
-# df20 %>% view()
-
+q1<-tnum.query(query="Charlse_Dickens/A_Christmas_Carol_4# has *",max=100) %>% tnum.objectsToDf()
+d1 <- kable(head(q1),)
+```
 
 ```{r echo=TRUE, message=FALSE}
 df_heading<- tnum.query('Charlse_Dickens/A_Christmas_Carol_4/heading# has text',max=90) %>% tnum.objectsToDf()
 kable(df_heading %>% select(subject:numeric.value))
 ```
-
 
 ```{r echo=TRUE}
 # q26<- tnum.query('*# has text',max=300000) %>% tnum.objectsToDf()
@@ -297,13 +381,6 @@ df_text <- tnum.query('Charlse_Dickens/A_Christmas_Carol_4# has text',max=60) %>
 df_text %>% select(subject:string.value)%>% head()
 
 ```
-
-
-
-
-
-
-
 
 ```{r}
 
@@ -329,7 +406,13 @@ plot(sentence_out)
 
 ### Compare this analysis with the analysis you did in Task TWO
 
-It is difficult to directly compare Sentimentr and Bing's score. Therefore, I apply `scale` function to keep two variable into the same criteria. Then I use ggplot to plot bar plot. From the Figure below, we can see that the trends, say positive and negetive direction, are mainly similar. But the exact number differs from two methods. Generally, sentimentr package is more optimictic than Bing method. 
+It is difficult to directly compare Sentimentr and Bing's score.
+Therefore, I apply `scale` function to keep two variable into the same
+criteria. Then I use ggplot to plot bar plot. From the Figure below, we
+can see that the trends, say positive and negetive direction, are mainly
+similar. But the exact number differs from two methods. Generally,
+sentimentr package is more optimictic than Bing method.
+
 ```{r}
 normalize<-function(x){
   re<-(x-min(x)) /(max(x)-min(x))
@@ -364,148 +447,107 @@ sentence_out_2method<-left_join(sentence_out,bing_new_Chritmas,by='section')%>% 
 sentence_out_2method_plot<-sentence_out_2method %>% pivot_longer(cols=c('sentimentr_scale','bing_scale'),names_to = 'sentiment')
 
 sentence_out_2method_plot %>%ggplot(aes(y=value,x=factor(section))) +
-  geom_bar(aes(fill=factor(sentiment)),stat='identity',position = "dodge",width = 0.7)+theme_bw()
+  geom_bar(aes(fill=sentiment),stat='identity',position = "dodge",width = 0.7)+theme_bw()
 
 ```
 
 \newpage
 
-
 ### EXTRA CREDIT: Character Analysis
 
-Baron and Edger are two main character among the fiction book. I Pick these two characters from my book.     
-The following table in the count number of times each character appears in each chapter:
+In this book, as we showed in the word cloud, Scrooge and are 2 leading
+characters. Now, I prefer to do the character analysis for them:
+
+First, I am going to calculate the frequency for the characters.
+
+The following table in the count number of times each character appears
+in each chapter:
 
 ```{r eval=FALSE}
 #theme(legend.key.size = unit(2, 'cm'),legend.title = element_text(size=30),legend.text = element_text(size=30))
-book_sentence_indi<-book_sentence %>% mutate(baron=str_match(book_sentence$string.value,regex('([Bb]aron)'))[,1],
-                         edgar=str_match(book_sentence$string.value,regex('(Edgar)'))[,1])
+book_sentence_indi<-Christmas_by_sentence %>% mutate(scrooge=str_match(Christmas_by_sentence$string.value,regex('([Ss]crooge)'))[,1],
+                         bob=str_match(Christmas_by_sentence$string.value,regex('([Bb]ob)'))[,1])
 
 
 score<-book_sentence_indi %>% dplyr::mutate(sentence_split = get_sentences(string.value))%$%
     sentiment_by(sentence_split) %>% `$`(ave_sentiment)
 
 book_sentence_indi$score<-score
-re<-book_sentence_indi %>% group_by(section) %>% summarise(baron=sum(baron %>% is.na() %>% `!`()),
-                                                       edgar=sum(edgar%>% is.na() %>% `!`()))
+re<-book_sentence_indi %>% group_by(section) %>% summarise(scrooge=sum(scrooge %>% is.na() %>% `!`()),
+                                                       bob=sum(bob%>% is.na() %>% `!`()))
 
 #knitr::kable(re,'simple')
 re2<-book_sentence_indi %>% group_by(section,paragraph) %>% summarise(
-  both_appear=sum(baron %>% is.na() %>% `!`() & edgar%>% is.na() %>% `!`() ))
+  both_appear=sum(scrooge %>% is.na() %>% `!`() & bob%>% is.na() %>% `!`() ))
 
 #re2 %>% filter(both_appear>0)
-#knitr::kable(re2 %>% filter(both_appear>0),'simple')
+knitr::kable(re2 %>% filter(both_appear>0),'simple')
+
+
 ```
 
-chapter    baron   edgar
---------  ------  ------
-       1      10       2
-       2      22      17
-       3      18      16
-       4      13      12
-       5       9       5
-       6      16      18
-       7      12      13
-       8      15      24
-       9      13      19
-      10       8      14
-      11      10      12
-      12       5      18
-      13       0      11
-      14       1      13
-      15       1      14
+| chapter | baron | edgar |
+|:--------|------:|------:|
+| 1       |    10 |     2 |
+| 2       |    22 |    17 |
+| 3       |    18 |    16 |
+| 4       |    13 |    12 |
+| 5       |     9 |     5 |
+| 6       |    16 |    18 |
+| 7       |    12 |    13 |
+| 8       |    15 |    24 |
+| 9       |    13 |    19 |
+| 10      |     8 |    14 |
+| 11      |    10 |    12 |
+| 12      |     5 |    18 |
+| 13      |     0 |    11 |
+| 14      |     1 |    13 |
+| 15      |     1 |    14 |
+
+The following table is the count of number of times both characters
+appear in the same paragraphs.
+
+| section | paragraph | both_appear |
+|--------:|----------:|------------:|
+|       2 |         4 |           1 |
+|       2 |        28 |           1 |
+|       2 |        35 |           1 |
+|       2 |        36 |           1 |
+|       2 |        40 |           1 |
+|       3 |         1 |           1 |
+|       3 |        16 |           1 |
+|       4 |         3 |           1 |
+|       4 |         7 |           1 |
+|       4 |        11 |           1 |
+|       4 |        12 |           1 |
+|       4 |        23 |           1 |
+|       4 |        28 |           1 |
+|       5 |         1 |           1 |
+|       6 |         1 |           1 |
+|       6 |         3 |           1 |
+|       6 |        21 |           1 |
+|       7 |         5 |           1 |
+|       7 |         7 |           1 |
+|       7 |         8 |           1 |
+|       7 |         9 |           1 |
+|       8 |         1 |           1 |
+|       8 |         6 |           1 |
+|       8 |        11 |           1 |
+|       8 |        29 |           1 |
+|       8 |        31 |           1 |
+|       8 |        35 |           1 |
+|       9 |         2 |           1 |
+|       9 |        21 |           1 |
+|       9 |        32 |           1 |
+|       9 |        41 |           1 |
+|      10 |        11 |           1 |
+|      11 |         5 |           1 |
+|      11 |        16 |           2 |
+
+## Reference
 
 
 
+1. [A Christmas Carol in Prose; Being a Ghost Story of Christmas by Charles Dickens](https://www.gutenberg.org/ebooks/46)
 
-The following table is the count of number of times both characters appear in the same paragraphs.
-
-
- section   paragraph   both_appear
---------  ----------  ------------
-       2           4             1
-       2          28             1
-       2          35             1
-       2          36             1
-       2          40             1
-       3           1             1
-       3          16             1
-       4           3             1
-       4           7             1
-       4          11             1
-       4          12             1
-       4          23             1
-       4          28             1
-       5           1             1
-       6           1             1
-       6           3             1
-       6          21             1
-       7           5             1
-       7           7             1
-       7           8             1
-       7           9             1
-       8           1             1
-       8           6             1
-       8          11             1
-       8          29             1
-       8          31             1
-       8          35             1
-       9           2             1
-       9          21             1
-       9          32             1
-       9          41             1
-      10          11             1
-      11           5             1
-      11          16             2
-
-
-```{r eval=F}
-
-
-tnum.getDBPathList(taxonomy="subject", levels=2)
-
-#tnBooksFromLines(time_machine$text, "wells/hw_time_1")
-
-q20<-tnum.query(query="zweig/test1# has *",max=100000)
-df20 <- tnum.objectsToDf(q20)
-df20 %>% view()
-q24<- tnum.query('zweig/test1/heading# has *',max=60)
-df24 <- tnum.objectsToDf(q24)
-df24 %>% view()
-
-q26<- tnum.query('zweig/test1# has text',max=6000)
-df26 <- tnum.objectsToDf(q26)
-df26 %>% view()
-
-
-# q24<- tnum.query('wells9/hw9/heading# has *',max=6000)
-# df24 <- tnum.objectsToDf(q24)
-# 
-# q22<-tnum.query('wells9/hw9/heading:0022# has *')
-# df22<-tnum.objectsToDf(q22)
-# ord_ch1 <-unlist( tnum.query('wells9/hw9/heading:0022# has ordinal') )
-# ord_ch2<-unlist(tnum.query('wells9/hw9/heading:0023# has ordinal'))
-# 
-# q25<-tnum.query('wells9/hw9/heading:0023# has *')
-# df25<-tnum.objectsToDf(q25)
-#   
-# ch1_txt<-tnum.query('wells9/hw9/section:0022/paragraph:0002# has text',max=30)
-# ch1_txt_df<-tnum.objectsToDf(ch1_txt)
-# ch1_txt_df$string.value
-# 
-# ch2_txt<-tnum.query('wells9/hw9/section:0022/paragraph:0002/sentence:# has *',max=30)
-# 
-# ch2_txt_df<-tnum.objectsToDf(ch2_txt)
-# ch2_txt_df$string.value
-# 
-# length(ch2_txt_df$string.value)
-# 
-# 
-# q21<-tnum.query('wells9/hw9/section:0022/paragraph:0001/# has *',max=30)
-# df21<-tnum.objectsToDf(q21)
-# 
-# library(sentimentr)
-# 
-# my_book$text[105:145] %>% sentiment()
-```
-
+2. [Software Repository for Account and Finance](https://sraf.nd.edu/textual-analysis/contributed-materials/)
