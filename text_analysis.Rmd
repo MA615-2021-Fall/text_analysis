@@ -111,6 +111,8 @@ tidy_Christmas <- Christmas_table %>%
 #tidy_Christmas%>%view()
 ```
 
+### The difference in the sentiment analysis with different lexicons
+
 I now use 3 lexicons to get the sentiment analysis for every word in the
 book, and try to tell the difference among the 3 methods
 
@@ -139,7 +141,7 @@ kable(unique(bing_Christmas_list$sentiment), col.names = "sentiment", caption = 
 structure(bing_Christmas_list)
 ```
 
-The third one is nrc lexicon(outcome is 2188rows X 6columns):
+The third one is nrc lexicon(outcome is 6203rows X 6columns):
 
 ```{r}
 # do the inner join to get the sentiment analysis by nrc lexicon for each word in the book
@@ -358,39 +360,50 @@ Consequently, the conclusion can be drawn that this lexicon is not very suitable
 
 ## task 3 sentence-level analysis
 
-### tnum
+### Tnum
 
 Now, I input my book, A Christmas Carol, into tnum test2 space, the
-following table is part of the book.
+following tables are part of the book.
 
 ```{r, message=FALSE, warning=FALSE}
 # input the book into tnum space
 # tnBooksFromLines(Christmas_table$text, "Charlse_Dickens/A_Christmas_Carol_4")
-q1<-tnum.query(query="Charlse_Dickens/A_Christmas_Carol_4# has *",max=100) %>% tnum.objectsToDf()
-d1 <- kable(head(q1),)
+
+# query the first 100 lines of data and save them into dataframe
+q1_100<-tnum.query(query="Charlse_Dickens/A_Christmas_Carol_4# has *",max=100) %>% tnum.objectsToDf()
+
+# use kable to display the dataframe
+d1_100 <- kable(head(q1_100), caption = "First 100 Query results in tnum")
+d1_100
 ```
 
 ```{r echo=TRUE, message=FALSE}
+# get the text column
 df_heading<- tnum.query('Charlse_Dickens/A_Christmas_Carol_4/heading# has text',max=90) %>% tnum.objectsToDf()
-kable(df_heading %>% select(subject:numeric.value))
+kable(df_heading %>% select(subject:numeric.value),  caption = "Query results with subject heading")
 ```
 
 ```{r echo=TRUE}
-# q26<- tnum.query('*# has text',max=300000) %>% tnum.objectsToDf()
+
 df_text <- tnum.query('Charlse_Dickens/A_Christmas_Carol_4# has text',max=60) %>% tnum.objectsToDf()
-df_text %>% select(subject:string.value)%>% head()
+
+kable(df_text %>% select(subject:string.value)%>% head(),  caption = "Display the string.value property of the results")
+
 
 ```
-
-```{r}
+Then I use sentimentr to get sentiment score group by these scores with section to get the average result. The plot sort the average sentiment score from high to low.
+```{r fig.width=6, fig.height=4,fig.cap="Sentiment Analysis by sentence"}
+#query the texts with the subject section and save them into dataframe
 
 df_section<- tnum.query('Charlse_Dickens/A_Christmas_Carol_4/section# has text',max=9000) %>% tnum.objectsToDf()
-#df27 %>% view()
+
+# split the subject column into several new columns 
 Christmas_by_sentence<-df_section %>% separate(col=subject,
                   into = c("path1", "path2","section","paragraph","sentence"), 
                   sep = "/", 
                   fill = "right") %>% 
   select(section:string.value)
+
 
 #book_sentence$section<-str_extract_all(book_sentence$section,"\\d+") %>% unlist() %>% as.numeric()
 Christmas_by_sentence<-Christmas_by_sentence %>% mutate_at(c('section','paragraph','sentence'),~str_extract_all(.,"\\d+") %>% unlist() %>% as.numeric())
@@ -403,15 +416,20 @@ sentence_out<-Christmas_by_sentence %>% mutate(sentence_split = get_sentences(st
 plot(sentence_out)
 
 ```
+As we can see in Figure 6, I make the sentiment analysis by sentence and grouped the score of sentiment into 5 chapters. The red points represent the mean score for each chapter.
 
 ### Compare this analysis with the analysis you did in Task TWO
 
-It is difficult to directly compare Sentimentr and Bing's score.
-Therefore, I apply `scale` function to keep two variable into the same
-criteria. Then I use ggplot to plot bar plot. From the Figure below, we
-can see that the trends, say positive and negetive direction, are mainly
-similar. But the exact number differs from two methods. Generally,
-sentimentr package is more optimictic than Bing method.
+We cannot compare the methods of package Sentimentr and Bing lexicon directly because they assess the sentiment in a different scale. At this point, it's good to try some standardization methods. Here I will scale this 2 kinds of scores and show the sentiment analysis grouped by chapters and then we can tell the sentimental progressions in this fiction  with 2 different methods.
+
+In this case there are 3 scale methods I use:
+1. standerdization
+2. make a rank for these 5 chapter
+
+
+
+According to the result, I would like to say the "" method is the best sentiment analysis method for this book.
+
 
 ```{r}
 normalize<-function(x){
@@ -455,7 +473,7 @@ sentence_out_2method_plot %>%ggplot(aes(y=value,x=factor(section))) +
 
 ### EXTRA CREDIT: Character Analysis
 
-In this book, as we showed in the word cloud, Scrooge and are 2 leading
+In this book, as we showed in the word cloud, Scrooge and Bob are 2 leading
 characters. Now, I prefer to do the character analysis for them:
 
 First, I am going to calculate the frequency for the characters.
@@ -486,63 +504,10 @@ knitr::kable(re2 %>% filter(both_appear>0),'simple')
 
 ```
 
-| chapter | baron | edgar |
-|:--------|------:|------:|
-| 1       |    10 |     2 |
-| 2       |    22 |    17 |
-| 3       |    18 |    16 |
-| 4       |    13 |    12 |
-| 5       |     9 |     5 |
-| 6       |    16 |    18 |
-| 7       |    12 |    13 |
-| 8       |    15 |    24 |
-| 9       |    13 |    19 |
-| 10      |     8 |    14 |
-| 11      |    10 |    12 |
-| 12      |     5 |    18 |
-| 13      |     0 |    11 |
-| 14      |     1 |    13 |
-| 15      |     1 |    14 |
-
-The following table is the count of number of times both characters
-appear in the same paragraphs.
-
-| section | paragraph | both_appear |
-|--------:|----------:|------------:|
-|       2 |         4 |           1 |
-|       2 |        28 |           1 |
-|       2 |        35 |           1 |
-|       2 |        36 |           1 |
-|       2 |        40 |           1 |
-|       3 |         1 |           1 |
-|       3 |        16 |           1 |
-|       4 |         3 |           1 |
-|       4 |         7 |           1 |
-|       4 |        11 |           1 |
-|       4 |        12 |           1 |
-|       4 |        23 |           1 |
-|       4 |        28 |           1 |
-|       5 |         1 |           1 |
-|       6 |         1 |           1 |
-|       6 |         3 |           1 |
-|       6 |        21 |           1 |
-|       7 |         5 |           1 |
-|       7 |         7 |           1 |
-|       7 |         8 |           1 |
-|       7 |         9 |           1 |
-|       8 |         1 |           1 |
-|       8 |         6 |           1 |
-|       8 |        11 |           1 |
-|       8 |        29 |           1 |
-|       8 |        31 |           1 |
-|       8 |        35 |           1 |
-|       9 |         2 |           1 |
-|       9 |        21 |           1 |
-|       9 |        32 |           1 |
-|       9 |        41 |           1 |
-|      10 |        11 |           1 |
-|      11 |         5 |           1 |
-|      11 |        16 |           2 |
+```{r}
+tnum.getDBPathList(taxonomy="subject", levels=2)
+tnum.graphPathList(pathList = ,rootLabel = "")
+```
 
 ## Reference
 
@@ -551,3 +516,7 @@ appear in the same paragraphs.
 1. [A Christmas Carol in Prose; Being a Ghost Story of Christmas by Charles Dickens](https://www.gutenberg.org/ebooks/46)
 
 2. [Software Repository for Account and Finance](https://sraf.nd.edu/textual-analysis/contributed-materials/)
+
+3. [Text Mining with R](https://www.tidytextmining.com/sentiment.html)
+
+4. The ideas and supports from my dear classmate Yuli Jin.
