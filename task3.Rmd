@@ -1,0 +1,259 @@
+---
+title: "Task3"
+author: "Jinyu"
+date: "12/12/2021"
+output: pdf_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=F,message = F,echo=F,highlight=F)
+#knitr::opts_chunk$set(echo = TRUE,out.width="0.9\\linewidth",dev="png",fig.align  = 'center')
+knitr::opts_chunk$set(fig.width=5, fig.height=5,fig.align = "center") 
+pacman::p_load(
+tidyverse,
+magrittr,
+knitr,
+gutenbergr,
+tidytext,
+sentimentr,
+textdata
+)
+
+
+
+```
+
+## Task 1: Pick a Book
+
+The book I chose is written by Charlse Dickens, and the book name is
+"Hard Times" and shortened as "A Christmas Carol" because we are gonna
+spend our final time of the year at Christmas.
+
+```{r}
+# search the books from one author
+# gutenberg_works(str_detect(author, "Dickens"))
+
+# get the book from the website
+Christmas_df = gutenberg_download(gutenberg_id = 46)
+
+#my_books=hard_times_df
+
+# save it into txt  
+# write.table(Christmas_df,'A_Christmas_Carol.txt',row.names = F)
+
+```
+
+```{r}
+library(tnum)
+tnum.authorize("mssp1.bu.edu")
+tnum.setSpace("test2")
+source("Book2TN-v6A-1.R")
+
+```
+
+```{r}
+# get the table from txt
+Christmas_table <-read.table('A_Christmas_Carol.txt',header = T)
+
+```
+
+```{r}
+# Find the chapter for the book;
+# Add one column to record the chapter number for each token
+
+tidy_Christmas <- Christmas_table %>%
+  mutate(
+    linenumber = row_number(),
+    chapter = cumsum(str_detect(text, 
+                                regex("<")
+                                      ))) %>%
+  unnest_tokens(word, text)
+
+#tidy_Christmas$chapter%>%unique()
+#tidy_Christmas%>%view()
+```
+
+## task 3 sentence-level analysis
+
+### Tnum
+
+Now, I input my book, A Christmas Carol, into tnum test2 space, the
+following tables are part of the book.
+
+```{r, message=FALSE, warning=FALSE}
+# input the book into tnum space
+# tnBooksFromLines(Christmas_table$text, "Charlse_Dickens/A_Christmas_Carol_4")
+
+# query the first 100 lines of data and save them into dataframe
+q1_100<-tnum.query(query="Charlse_Dickens/A_Christmas_Carol_4# has *",max=100) %>% tnum.objectsToDf()
+
+# use kable to display the dataframe
+d1_100 <- kable(head(q1_100), caption = "First 100 Query results in tnum")
+d1_100
+```
+
+```{r echo=TRUE, message=FALSE}
+# get the text column
+df_heading<- tnum.query('Charlse_Dickens/A_Christmas_Carol_4/heading# has text',max=90) %>% tnum.objectsToDf()
+kable(df_heading %>% select(subject:numeric.value),  caption = "Query results with subject heading")
+```
+
+Now I list the sentiment score groupep by these scores with section to get the average result using Sentimentr package. 
+```{r fig.width=6, fig.height=4,fig.cap="Sentiment Analysis by sentence"}
+#query the texts with the subject section and save them into dataframe
+
+df_section<- tnum.query('Charlse_Dickens/A_Christmas_Carol_4/section# has text',max=9000) %>% tnum.objectsToDf()
+
+# split the subject column into several new columns 
+Christmas_by_sentence<-df_section %>% separate(col=subject,
+                  into = c("path1", "path2","section","paragraph","sentence"), 
+                  sep = "/", 
+                  fill = "right") %>% 
+  select(section:string.value)
+
+
+#book_sentence$section<-str_extract_all(book_sentence$section,"\\d+") %>% unlist() %>% as.numeric()
+Christmas_by_sentence<-Christmas_by_sentence %>% mutate_at(c('section','paragraph','sentence'),~str_extract_all(.,"\\d+") %>% unlist() %>% as.numeric())
+
+
+### change the name of sentence_out
+sentence_out<-Christmas_by_sentence %>% mutate(sentence_split = get_sentences(string.value))%$%
+    sentiment_by(sentence_split, list(section))
+
+plot(sentence_out)
+
+```
+
+As we can see in Figure 6, I make the sentiment analysis by sentence and grouped the score of sentiment into 5 chapters. The red points represent the mean score for each chapter.
+
+### Compare this analysis with the analysis you did in Task TWO
+
+We cannot compare the methods of package Sentimentr and Bing lexicon directly because they assess the sentiment in a different scale. At this point, it's good to try some standardization methods. Here I will scale this 2 kinds of scores and show the sentiment analysis grouped by chapters and then we can tell the sentimental progressions in this fiction  with 2 different methods.
+
+In this case there are 3 scale methods I use:
+1. standerdization
+2. make a rank for these 5 chapter
+
+
+
+According to the result, I would like to say the "" method is the best sentiment analysis method for this book.
+
+
+```{r}
+normalize<-function(x){
+  re<-(x-min(x)) /(max(x)-min(x))
+  return(re)
+}
+
+normalize_log<-function(x){
+  re<-(log(x) /log(max(x)))
+  return(re)
+}
+```
+
+```{r fig.cap="sentiment comparison- normalize"}
+bing_new<-tidy_Christmas %>% 
+    inner_join(get_sentiments("bing")) %>%
+    mutate(method = "Bing et al.") %>% 
+    count(method, index = chapter, sentiment) %>%
+  pivot_wider(names_from = sentiment,
+              values_from = n,
+              values_fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+
+
+
+bing_new_Chritmas<-bing_new %>% mutate(bing_scale=normalize(sentiment)) %>% select(method,index,bing_scale)
+colnames(bing_new_Chritmas)[2]='section'
+
+sentence_out<-sentence_out %>% mutate(sentimentr_scale=normalize(ave_sentiment))
+
+
+sentence_out_2method<-left_join(sentence_out,bing_new_Chritmas,by='section')%>% select(section,bing_scale,sentimentr_scale)
+sentence_out_2method_plot<-sentence_out_2method %>% pivot_longer(cols=c('sentimentr_scale','bing_scale'),names_to = 'sentiment')
+
+sentence_out_2method_plot %>%ggplot(aes(y=value,x=factor(section))) +
+  geom_bar(aes(fill=sentiment),stat='identity',position = "dodge",width = 0.7)+theme_bw()
+
+```
+
+In Figure 7, when we use the normalization to process the scores, we can see there is 0 for both methods in Chapter 1, but for the latter chapters, using bing lexicon shows a more extreme sentiment (whether more positive or more negative), which seems to be more reasonable. 
+
+```{r fig.cap="sentiment comparison- rank"}
+bing_new<-tidy_Christmas %>% 
+    inner_join(get_sentiments("bing")) %>%
+    mutate(method = "Bing et al.") %>% 
+    count(method, index = chapter, sentiment) %>%
+  pivot_wider(names_from = sentiment,
+              values_from = n,
+              values_fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+
+
+
+bing_new_Chritmas<-bing_new %>% mutate(bing_scale=rank(sentiment)) %>% select(method,index,bing_scale)
+colnames(bing_new_Chritmas)[2]='section'
+
+sentence_out<-sentence_out %>% mutate(sentimentr_scale=rank(ave_sentiment))
+
+
+sentence_out_2method<-left_join(sentence_out,bing_new_Chritmas,by='section')%>% select(section,bing_scale,sentimentr_scale)
+sentence_out_2method_plot<-sentence_out_2method %>% pivot_longer(cols=c('sentimentr_scale','bing_scale'),names_to = 'sentiment')
+
+sentence_out_2method_plot %>%ggplot(aes(y=value,x=factor(section))) +
+  geom_bar(aes(fill=sentiment),stat='identity',position = "dodge",width = 0.7)+theme_bw()
+
+```
+
+In Figure 8, the larger the rank is, the more positive the sentiment is. So we can tell that there is a slight different in Chapter 2 and Chapter 3 in diferent methods and I think it's acceptable for both methods as is shown in this figure.
+
+\newpage
+
+### EXTRA CREDIT: Character Analysis
+
+In this book, as we showed in the word cloud, Scrooge and Bob are 2 leading
+characters. Now, I prefer to do the character analysis for them:
+
+First, I am going to calculate the frequency for the characters.
+
+The following table in the count number of times each character appears
+in each chapter:
+
+```{r}
+#
+Christmas_sentence<-Christmas_by_sentence %>% mutate(scrooge=str_match(Christmas_by_sentence$string.value,regex('([Ss]crooge)'))[,1],
+                         bob=str_match(Christmas_by_sentence$string.value,regex('([Bb]ob)'))[,1])
+
+
+score<-Christmas_sentence %>% dplyr::mutate(sentence_split = get_sentences(string.value))%$%
+    sentiment_by(sentence_split) %>% `$`(ave_sentiment)
+
+Christmas_sentence$score<-score
+count_respective<-Christmas_sentence %>% group_by(section) %>% summarise(scrooge=sum(scrooge %>% is.na() %>% `!`()),
+                                                       bob=sum(bob%>% is.na() %>% `!`()))
+
+#knitr::kable(re,'simple')
+count_both <-Christmas_sentence %>% group_by(section,paragraph) %>% summarise(
+  both_appear=sum(scrooge %>% is.na() %>% `!`() & bob%>% is.na() %>% `!`() ))
+
+#re2 %>% filter(both_appear>0)
+kable(count_respective,'simple', caption = "The Count for each Character")
+
+kable(count_both %>% filter(both_appear>0),'simple', caption = "The Count when Both Characters appear")
+
+
+```
+
+
+Now we can find some information about these 2 characters. For Scrooge, he is the most leading character for this book so we can see him in every chapter. However, for Bob, he only exist in Chapter 3 to 5 and he has some interactions with Scrooge, which is reasonable because Scrooge is his boss.
+
+## Reference
+
+
+
+1. [A Christmas Carol in Prose; Being a Ghost Story of Christmas by Charles Dickens](https://www.gutenberg.org/ebooks/46)
+
+2. [Software Repository for Account and Finance](https://sraf.nd.edu/textual-analysis/contributed-materials/)
+
+3. [Text Mining with R](https://www.tidytextmining.com/sentiment.html)
+
+4. The ideas and supports from my dear classmate Yuli Jin.
