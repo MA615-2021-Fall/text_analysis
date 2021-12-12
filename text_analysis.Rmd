@@ -443,7 +443,34 @@ normalize_log<-function(x){
 }
 ```
 
-```{r fig.cap="sentiment comparison"}
+```{r fig.cap="sentiment comparison- normalize"}
+bing_new<-tidy_Christmas %>% 
+    inner_join(get_sentiments("bing")) %>%
+    mutate(method = "Bing et al.") %>% 
+    count(method, index = chapter, sentiment) %>%
+  pivot_wider(names_from = sentiment,
+              values_from = n,
+              values_fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+
+
+
+bing_new_Chritmas<-bing_new %>% mutate(bing_scale=normalize(sentiment)) %>% select(method,index,bing_scale)
+colnames(bing_new_Chritmas)[2]='section'
+
+sentence_out<-sentence_out %>% mutate(sentimentr_scale=normalize(ave_sentiment))
+
+
+sentence_out_2method<-left_join(sentence_out,bing_new_Chritmas,by='section')%>% select(section,bing_scale,sentimentr_scale)
+sentence_out_2method_plot<-sentence_out_2method %>% pivot_longer(cols=c('sentimentr_scale','bing_scale'),names_to = 'sentiment')
+
+sentence_out_2method_plot %>%ggplot(aes(y=value,x=factor(section))) +
+  geom_bar(aes(fill=sentiment),stat='identity',position = "dodge",width = 0.7)+theme_bw()
+
+```
+In Figure 7, when we use the normalization to process the scores, we can see there is 0 for both methods in Chapter 1, but for the latter chapters, using bing lexicon shows a more extreme sentiment (whether more positive or more negative), which seems to be more reasonable. 
+
+```{r fig.cap="sentiment comparison- rank"}
 bing_new<-tidy_Christmas %>% 
     inner_join(get_sentiments("bing")) %>%
     mutate(method = "Bing et al.") %>% 
@@ -468,6 +495,7 @@ sentence_out_2method_plot %>%ggplot(aes(y=value,x=factor(section))) +
   geom_bar(aes(fill=sentiment),stat='identity',position = "dodge",width = 0.7)+theme_bw()
 
 ```
+In Figure 8, the larger the rank is, the more positive the sentiment is. So we can tell that there is a slight different in Chapter 2 and Chapter 3 in diferent methods and I think it's acceptable for both methods as is shown in this figure.
 
 \newpage
 
@@ -499,14 +527,19 @@ re2<-book_sentence_indi %>% group_by(section,paragraph) %>% summarise(
   both_appear=sum(scrooge %>% is.na() %>% `!`() & bob%>% is.na() %>% `!`() ))
 
 #re2 %>% filter(both_appear>0)
-knitr::kable(re2 %>% filter(both_appear>0),'simple')
+kable(re,'simple', caption = "The Count for each Character")
+
+kable(re2 %>% filter(both_appear>0),'simple', caption = "The Count when Both Characters appear")
+
+
+
 
 
 ```
 
 ```{r}
-tnum.getDBPathList(taxonomy="subject", levels=2)
-tnum.graphPathList(pathList = ,rootLabel = "")
+# tnum.getDBPathList(taxonomy="subject", levels=2)
+# tnum.graphPathList(pathList = ,rootLabel = "")
 ```
 
 ## Reference
